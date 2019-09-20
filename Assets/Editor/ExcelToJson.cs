@@ -1,74 +1,112 @@
 ﻿using Excel;
-using Newtonsoft.Json;
-using System.Collections.Generic;
+using System;
 using System.Data;
 using System.IO;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-public class SimpleTool : MonoBehaviour
+public class SimpleTool : EditorWindow
 {
-    [MenuItem("Tool/excel转为json文件")]
-    public static void ExcelToJson()
-    {
-        DataTable dataTable;
-        //列数
-        int keyIndex = 0;
-        //excel文件路径
-        string excelFilePath = @"C:\Users\sun\Desktop\4DFishingLocalization.xlsx"; 
+    private static string _inputPath;
+    private static string _outputPath;
 
-        if (!File.Exists(excelFilePath))
+    private void OnGUI()
+    {
+        GUILayout.Label("Input Path:");
+        _inputPath = GUILayout.TextField(_inputPath);
+        GUILayout.Label("Output Path:");
+        _outputPath = GUILayout.TextField(_outputPath);
+        if (GUILayout.Button("转换"))
         {
-            Debug.Log("不存在文件：" + excelFilePath);
-            return;
+            Change();
+            //将path保存到本地
+            SavePath();
+        }
+    }
+
+    [MenuItem("Tool/excel to json")]
+    public static void ShowWindow()
+    {
+        //加载path
+        LoadPath();
+        var window = GetWindow(typeof(SimpleTool), false);
+        window.titleContent = new GUIContent("excel转为json文件", "Set Path");
+        window.Show();
+    }
+
+    private static void LoadPath()
+    {
+        _inputPath = PlayerPrefs.GetString(Application.productName + "INPUT_PATH", string.Empty);
+        _outputPath = PlayerPrefs.GetString(Application.productName + "OUTPUT_PATH", string.Empty);
+    }
+
+    private void SavePath()
+    {
+        PlayerPrefs.SetString(Application.productName + "INPUT_PATH", _inputPath);
+        PlayerPrefs.SetString(Application.productName + "OUTPUT_PATH", _outputPath);
+    }
+
+    private void Change()
+    {
+        if (!File.Exists(_inputPath))
+        {
+            throw new Exception("不存在文件：" + _inputPath);
         }
 
-        FileStream mStream = null;
+        FileStream mStream;
         try
         {
             //文件流
-            mStream = File.Open(excelFilePath, FileMode.Open, FileAccess.Read);
+            mStream = File.Open(_inputPath, FileMode.Open, FileAccess.Read);
         }
         catch
         {
-            Debug.Log(excelFilePath + "文件正在被占用中");
+            throw new Exception("文件正在被占用中:" + _inputPath);
         }
 
+
+        DataTable dataTable;
+        //列数
+        var index = 0;
         //转化为excel
-        IExcelDataReader mExcelReader = ExcelReaderFactory.CreateOpenXmlReader(mStream);
-
+        IExcelDataReader factoy = ExcelReaderFactory.CreateOpenXmlReader(mStream);
         //表格数据集合
-        DataSet mResultSet = mExcelReader.AsDataSet();
+        var dataSet = factoy.AsDataSet();
 
-        Debug.Log(mResultSet == null);
-
-        if (mResultSet.Tables.Count < 1) return;
+        if (dataSet.Tables.Count < 1)
+        {
+            return;
+        }
         //获取第一个数据表
-        dataTable = mResultSet.Tables[0];
+        dataTable = dataSet.Tables[0];
         for (int i = 0; i < dataTable.Columns.Count; i++)
         {
             if (dataTable.Rows[0][i].ToString().Equals("Key"))
-                keyIndex = i;
+                index = i;
         }
         //Row[][] Row[行][列]
-        int count = dataTable.Rows.Count;
-        TDRTGFishingLocalization tDRTGFishingLocalization = new TDRTGFishingLocalization();
+        var count = dataTable.Rows.Count;
+
+        //Debug.LogError(dataTable.Rows[0]);
+        Root root = new Root();
         for (int i = 1; i < count; i++)
         {
-            string key = dataTable.Rows[i][keyIndex].ToString();
-            string ChineseSimplified = dataTable.Rows[i][keyIndex + 1].ToString();
-            string ChineseTraditional = dataTable.Rows[i][keyIndex + 2].ToString();
-            string English = dataTable.Rows[i][keyIndex + 3].ToString();
-
-            Language1 language = new Language1(key, ChineseSimplified, ChineseTraditional, English);
-            tDRTGFishingLocalization.Languages.Add(language);
+            var key = dataTable.Rows[i][index].ToString();
+            var chineseSimplified = dataTable.Rows[i][index + 1].ToString();
+            var chineseTraditional = dataTable.Rows[i][index + 2].ToString();
+            var english = dataTable.Rows[i][index + 3].ToString();
+            var temp = new Language(key, chineseSimplified, chineseTraditional, english);
+            root.LanguageList.Add(temp);
         }
 
         //生成Json字符串
-        string json = JsonConvert.SerializeObject(tDRTGFishingLocalization, Formatting.Indented);
+        //var json = JsonConvert.SerializeObject(root, Formatting.Indented);
+
+        var json = JsonUtility.ToJson(root, true);
+
         //写入文件
-        using (FileStream fileStream = new FileStream(Application.dataPath + "/Resources/4DFishingLocalization.json", FileMode.Create, FileAccess.Write))
+        using (FileStream fileStream = new FileStream(_outputPath, FileMode.Create, FileAccess.Write))
         {
             using (TextWriter textWriter = new StreamWriter(fileStream, Encoding.UTF8))
             {
@@ -76,33 +114,6 @@ public class SimpleTool : MonoBehaviour
             }
         }
         AssetDatabase.Refresh();
-        Debug.Log(">>>转换成功！！！");
-    }
-
-
-
-    [System.Serializable]
-    public class TDRTGFishingLocalization
-    {
-        public List<Language1> Languages;
-        public TDRTGFishingLocalization()
-        {
-            Languages = new List<Language1>();
-        }
-    }
-    [System.Serializable]
-    public class Language1
-    {
-        public string Key;
-        public string ChineseSimplified;
-        public string ChineseTraditional;
-        public string English;
-        public Language1(string Key, string ChineseSimplified, string ChineseTraditional, string English)
-        {
-            this.Key = Key;
-            this.ChineseSimplified = ChineseSimplified;
-            this.ChineseTraditional = ChineseTraditional;
-            this.English = English;
-        }
+        Debug.LogError(">>>转换成功");
     }
 }
