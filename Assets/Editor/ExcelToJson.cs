@@ -53,7 +53,6 @@ public class SimpleTool : EditorWindow
         {
             throw new Exception("不存在文件：" + _inputPath);
         }
-
         FileStream mStream;
         try
         {
@@ -65,10 +64,7 @@ public class SimpleTool : EditorWindow
             throw new Exception("文件正在被占用中:" + _inputPath);
         }
 
-
         DataTable dataTable;
-        //列数
-        var index = 0;
         //转化为excel
         IExcelDataReader factoy = ExcelReaderFactory.CreateOpenXmlReader(mStream);
         //表格数据集合
@@ -80,40 +76,30 @@ public class SimpleTool : EditorWindow
         }
         //获取第一个数据表
         dataTable = dataSet.Tables[0];
-        for (int i = 0; i < dataTable.Columns.Count; i++)
-        {
-            if (dataTable.Rows[0][i].ToString().Equals("Key"))
-                index = i;
-        }
         //Row[][] Row[行][列]
-        var count = dataTable.Rows.Count;
-
-        //Debug.LogError(dataTable.Rows[0]);
         Root root = new Root();
-        for (int i = 1; i < count; i++)
+        for (int i = 1; i < dataTable.Rows.Count; i++)
         {
-            var key = dataTable.Rows[i][index].ToString();
-            var chineseSimplified = dataTable.Rows[i][index + 1].ToString();
-            var chineseTraditional = dataTable.Rows[i][index + 2].ToString();
-            var english = dataTable.Rows[i][index + 3].ToString();
-            var temp = new Language(key, chineseSimplified, chineseTraditional, english);
+            var array = dataTable.Rows[i].ItemArray;
+            var temp = new Language(array[0].ToString(), array[1].ToString(), array[2].ToString(), array[3].ToString());
             root.LanguageList.Add(temp);
         }
-
         //生成Json字符串
-        //var json = JsonConvert.SerializeObject(root, Formatting.Indented);
-
-        var json = JsonUtility.ToJson(root, true);
-
+        var jsonStr = JsonUtility.ToJson(root, true);
         //写入文件
-        using (FileStream fileStream = new FileStream(_outputPath, FileMode.Create, FileAccess.Write))
+        WriteFile(jsonStr, _outputPath);
+        AssetDatabase.Refresh();
+        Debug.LogError(">>>转换成功");
+    }
+
+    private void WriteFile(string str,string path)
+    {
+        using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write))
         {
             using (TextWriter textWriter = new StreamWriter(fileStream, Encoding.UTF8))
             {
-                textWriter.Write(json);
+                textWriter.Write(str);
             }
         }
-        AssetDatabase.Refresh();
-        Debug.LogError(">>>转换成功");
     }
 }
