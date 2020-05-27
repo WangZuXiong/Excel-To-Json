@@ -13,6 +13,43 @@ public class SimpleTool : EditorWindow
 
     private void OnGUI()
     {
+        /*
+        GUILayout.BeginHorizontal();
+
+        GUIContent inputFolderContent = new GUIContent("Input Folder", "Excel文件");
+        EditorGUIUtility.labelWidth = 120.0f;
+        EditorGUILayout.TextField(inputFolderContent, _inputPath, GUILayout.MinWidth(120), GUILayout.MaxWidth(500));
+        if (GUILayout.Button(new GUIContent("选择Excel文件"), GUILayout.MinWidth(80), GUILayout.MaxWidth(100)))
+        {
+            _inputPath = EditorUtility.OpenFilePanel("Select Excel Files", _inputPath, Application.dataPath);
+        }
+
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+
+        GUIContent outputFolderContent = new GUIContent("Output Folder", "Json输出路径");
+        EditorGUILayout.TextField(outputFolderContent, _outputPath, GUILayout.MinWidth(120), GUILayout.MaxWidth(500));
+        if (GUILayout.Button(new GUIContent("选择Json输出路径"), GUILayout.MinWidth(80), GUILayout.MaxWidth(100)))
+        {
+            _outputPath = EditorUtility.OpenFolderPanel("Select Folder to save json files", _outputPath, Application.dataPath);
+        }
+
+        GUILayout.EndHorizontal();
+
+
+
+        if (string.IsNullOrEmpty(_inputPath) || string.IsNullOrEmpty(_outputPath))
+        {
+            GUI.enabled = false;
+        }
+
+        GUILayout.BeginArea(new Rect((Screen.width / 2) - (200 / 2), (Screen.height / 2) - (25 / 2), 200, 25));
+
+        GUILayout.EndArea();
+
+        GUI.enabled = true;
+         */
         GUILayout.Label("Input Path:");
         _inputPath = GUILayout.TextField(_inputPath);
         GUILayout.Label("Output Path:");
